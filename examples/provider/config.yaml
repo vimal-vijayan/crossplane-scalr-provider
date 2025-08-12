@@ -1,25 +1,20 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: crossplane-system
----
-apiVersion: v1
 kind: Secret
 metadata:
   namespace: crossplane-system
-  name: example-provider-secret
+  name: scalr-provider-secret
 type: Opaque
 data:
-  # credentials: BASE64ENCODED_PROVIDER_CREDS
+  credentials: ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhZMk5mYVdRaU9pSmhZMk10ZGpCdmRHZ3dkblp3Y0djeGJtaHdZM0FpTENKbGVIQWlPakUzTmpJM05UWTJNVFlzSW1semN5STZJbk5qWVd4eU9uVnpaWElpTENKcWRHa2lPaUpoZEMxMk1HOTFNbUZvTWpKaU0yY3pNMmc0ZENKOS5pZ0k3aTZ2eXBULVZJTWVkMTVDVjl1M3MtVDl1SlVfRVYyVDN2WXktQ3ZFCg==
 ---
-apiVersion: template.crossplane.io/v1alpha1
+apiVersion: scalr.essity.com/v1alpha1
 kind: ProviderConfig
 metadata:
-  name: example
+  name: default 
 spec:
   credentials:
     source: Secret
     secretRef:
       namespace: crossplane-system
-      name: example-provider-secret
+      name: scalr-provider-secret
       key: credentials

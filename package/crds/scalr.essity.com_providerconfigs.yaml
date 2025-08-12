@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: providerconfigs.template.crossplane.io
+  name: providerconfigs.scalr.essity.com
 spec:
-  group: template.crossplane.io
+  group: scalr.essity.com
   names:
     kind: ProviderConfig
     listKind: ProviderConfigList

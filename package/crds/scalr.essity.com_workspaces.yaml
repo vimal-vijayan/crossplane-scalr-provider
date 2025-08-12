@@ -4,19 +4,19 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: mytypes.sample.template.crossplane.io
+  name: workspaces.scalr.essity.com
 spec:
-  group: sample.template.crossplane.io
+  group: scalr.essity.com
   names:
     categories:
     - crossplane
     - managed
-    - template
-    kind: MyType
-    listKind: MyTypeList
-    plural: mytypes
-    singular: mytype
-  scope: Cluster
+    - scalr
+    kind: Workspace
+    listKind: WorkspaceList
+    plural: workspaces
+    singular: workspace
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
@@ -34,7 +34,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A MyType is an example API type.
+        description: Workspace is the Schema for the workspaces API. Workspace defines
+          a Scalr workspace resource.
         properties:
           apiVersion:
             description: |-
@@ -54,7 +55,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: A MyTypeSpec defines the desired state of a MyType.
             properties:
               deletionPolicy:
                 default: Delete
@@ -71,12 +71,26 @@ spec:
                 - Delete
                 type: string
               forProvider:
-                description: MyTypeParameters are the configurable fields of a MyType.
                 properties:
-                  configurableField:
+                  description:
                     type: string
+                  environmentName:
+                    type: string
+                  name:
+                    maxLength: 100
+                    minLength: 1
+                    type: string
+                  provider:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  tags:
+                    additionalProperties:
+                      type: string
+                    type: object
                 required:
-                - configurableField
+                - environmentName
+                - name
                 type: object
               managementPolicies:
                 default:
@@ -246,17 +260,12 @@ spec:
             - forProvider
             type: object
           status:
-            description: A MyTypeStatus represents the observed state of a MyType.
+            description: A WorkspaceStatus represents the observed state of a Workspace.
             properties:
               atProvider:
-                description: MyTypeObservation are the observable fields of a MyType.
                 properties:
-                  configurableField:
+                  workspaceId:
                     type: string
-                  observableField:
-                    type: string
-                required:
-                - configurableField
                 type: object
               conditions:
                 description: Conditions of the resource.

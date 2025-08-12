@@ -1,10 +1,10 @@
 apiVersion: scalr.essity.com/v1alpha1
 kind: Workspace
 metadata:
-  name: vimal-workspace-01
+  name: vimal-workspace-02
 spec:
   forProvider:
-    name: vimals-workspace-01
+    name: vimals-workspace-02
     environmentName: env-v0otqrn3npkjd8fqk
     description: Example workspace for demonstration
     tags:
