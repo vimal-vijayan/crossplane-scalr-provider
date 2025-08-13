@@ -26,6 +26,31 @@ type WorkspaceParameters struct {
 	// +kubebuilder:validation:MaxLength=100
 	// +kubebuilder:validation:Required
 	Organization *string `json:"organization,omitempty"`
+	// +kubebuilder:validation:Optional
+	Attributes Attributes `json:"attributes,omitempty"`
+}
+
+type Attributes struct {
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="false"
+	AutoQueueRuns string `json:"autoQueueRuns,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="remote"
+	ExecutionMode string `json:"executionMode,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="terraform"
+	IacPlatform string `json:"iacPlatform,omitempty"`
+	// +kubebuilder:validation:Optional
+	Vcs VcsRepo `json:"vcsRepo,omitempty"`
+}
+
+type VcsRepo struct {
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="false"
+	DryRunsEnabled bool `json:"dryRunsEnabled,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="false"
+	IngressSubmodules bool `json:"ingressSubmodules,omitempty"`
 }
 
 type WorkspaceSpec struct {

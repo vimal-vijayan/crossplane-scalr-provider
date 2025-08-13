@@ -1,0 +1,51 @@
+// package workspace
+
+// import (
+// 	"fmt"
+// 	"io"
+// 	"net/http"
+// 	"strings"
+// )
+
+// type WorkspaceParameters struct {
+// 	Organization    string              `json:"organization"`
+// 	Name            string              `json:"name"`
+// 	EnvironmentName string              `json:"environmentName"`
+// 	Description     string              `json:"description"`
+// 	Tags            []string            `json:"tags"`
+// 	Attributes      workspaceAttributes `json:"workspaceParameters"`
+// }
+
+// type workspaceAttributes struct {
+// 	ExecutionMode string `json:"executionMode"`
+// 	IacPlatform   string `json:"iacPlatform"`
+// }
+
+// type auth struct {
+// 	apiToken string
+// }
+
+// func (w *WorkspaceParameters) createWorkspaces(auth *auth) (string, error) {
+
+// 	fmt.Println("API TOKEN : ", auth.apiToken)
+
+// 	url := fmt.Sprintf("https://%s.scalr.io/api/iacp/v3/workspaces", w.Organization)
+
+// 	payload := strings.NewReader(fmt.Sprintf("{\"data\":{\"attributes\":{\"auto-queue-runs\":\"skip_first\",\"execution-mode\":\"%s\",\"iac-platform\":\"%s\",\"terragrunt\":{\"include-external-dependencies\":false,\"use-run-all\":false},\"vcs-repo\":{\"dry-runs-enabled\":true,\"ingress-submodules\":false}},\"relationships\":{\"agent-pool\":{\"data\":{\"type\":\"agent-pools\"}},\"environment\":{\"data\":{\"type\":\"environments\",\"id\":\"%s\"}},\"module-version\":{\"data\":{\"type\":\"module-versions\"}},\"tags\":{\"data\":[{\"type\":\"tags\",\"id\":\"%s\"}]},\"vcs-provider\":{\"data\":{\"type\":\"vcs-providers\"}}},\"type\":\"workspaces\"}}",
+// 		w.Attributes.ExecutionMode,
+// 		w.Attributes.IacPlatform,
+// 		w.EnvironmentName,
+// 		w.Tags[0]))
+
+// 	req, _ := http.NewRequest("POST", url, payload)
+
+// 	req.Header.Add("accept", "application/vnd.api+json")
+// 	req.Header.Add("content-type", "application/vnd.api+json")
+
+// 	res, _ := http.DefaultClient.Do(req)
+
+// 	defer res.Body.Close()
+// 	body, _ := io.ReadAll(res.Body)
+
+// 	return string(body), nil
+// }

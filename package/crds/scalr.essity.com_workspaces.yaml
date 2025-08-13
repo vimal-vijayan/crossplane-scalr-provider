@@ -72,6 +72,27 @@ spec:
                 type: string
               forProvider:
                 properties:
+                  attributes:
+                    properties:
+                      autoQueueRuns:
+                        default: "false"
+                        type: string
+                      executionMode:
+                        default: remote
+                        type: string
+                      iacPlatform:
+                        default: terraform
+                        type: string
+                      vcsRepo:
+                        properties:
+                          dryRunsEnabled:
+                            default: "false"
+                            type: boolean
+                          ingressSubmodules:
+                            default: "false"
+                            type: boolean
+                        type: object
+                    type: object
                   description:
                     type: string
                   environmentName:

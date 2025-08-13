@@ -381,11 +381,11 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	workspaceName := *cr.Spec.ForProvider.Name
 	workspaceEnv := *cr.Spec.ForProvider.EnvironmentName
-	// workspaceTags := cr.Spec.ForProvider.Tags
+	workspaceTags := cr.Spec.ForProvider.Tags
 
 	// Create tags JSON structures
 	// var tagsJSON []map[string]string
-	// fmt.Printf("Tags came in %v\n", workspaceTags)
+	fmt.Printf("Tags came in %v\n", workspaceTags)
 
 	// Marshal tags to JSON string
 	// tagsBytes, err := json.Marshal(map[string]interface{}{
