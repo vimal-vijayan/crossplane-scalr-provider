@@ -6,7 +6,6 @@ spec:
   forProvider:
     name: vimals-workspace-01
     environmentName: env-v0otqrn3npkjd8fqk
-    description: Example workspace for demonstration
     attributes:
       executionMode: "remote"
       iacPlatform: terraform

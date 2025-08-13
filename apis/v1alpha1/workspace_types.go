@@ -32,8 +32,8 @@ type WorkspaceParameters struct {
 
 type Attributes struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default="false"
-	AutoQueueRuns string `json:"autoQueueRuns,omitempty"`
+	// +kubebuilder:default=false
+	AutoQueueRuns bool `json:"autoQueueRuns,omitempty"`
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="remote"
 	ExecutionMode string `json:"executionMode,omitempty"`
@@ -46,10 +46,10 @@ type Attributes struct {
 
 type VcsRepo struct {
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default="false"
+	// +kubebuilder:default=false
 	DryRunsEnabled bool `json:"dryRunsEnabled,omitempty"`
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default="false"
+	// +kubebuilder:default=false
 	IngressSubmodules bool `json:"ingressSubmodules,omitempty"`
 }
 

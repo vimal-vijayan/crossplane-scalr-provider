@@ -75,8 +75,8 @@ spec:
                   attributes:
                     properties:
                       autoQueueRuns:
-                        default: "false"
-                        type: string
+                        default: false
+                        type: boolean
                       executionMode:
                         default: remote
                         type: string
@@ -86,10 +86,10 @@ spec:
                       vcsRepo:
                         properties:
                           dryRunsEnabled:
-                            default: "false"
+                            default: false
                             type: boolean
                           ingressSubmodules:
-                            default: "false"
+                            default: false
                             type: boolean
                         type: object
                     type: object

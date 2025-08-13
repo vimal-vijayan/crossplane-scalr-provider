@@ -6,6 +6,9 @@ spec:
   forProvider:
     name: vimals-workspace-02
     environmentName: env-v0otqrn3npkjd8fqk
+    attributes:
+      executionMode: "remote"
+      iacPlatform: terraform
     tags: 
       - "demo"
       - "environment: staging"

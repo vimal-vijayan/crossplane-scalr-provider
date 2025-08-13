@@ -189,12 +189,12 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	fmt.Printf("Workspace Name: %s\n", *cr.Spec.ForProvider.Name)
 
 	// If the object is being deleted, report that the external resource does not exist.
-	if cr.GetDeletionTimestamp() != nil {
-		fmt.Printf(">>> Resource is being deleted, reporting as non-existent\n")
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
-	}
+	// if cr.GetDeletionTimestamp() != nil {
+	// 	fmt.Printf(">>> Resource is being deleted, reporting as non-existent\n")
+	// 	return managed.ExternalObservation{
+	// 		ResourceExists: false,
+	// 	}, nil
+	// }
 
 	// Get the Scalr client
 	scalrClient := c.service.(*ScalrService)
@@ -566,17 +566,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		fmt.Printf("  Description: <nil>\n")
 	}
 	fmt.Printf("  Environment: %s\n", *cr.Spec.ForProvider.EnvironmentName)
-
-	// Update tags on the workspace if exists
-	_ = `{
-  "data": [
-	{
-	  "type": "tags",
-	  "id": "type-v1"
-	}
-  ]
-}`
-
 	// Update the status with the workspace ID
 	cr.Status.AtProvider.WorkspaceId = &workspaceID
 
@@ -667,42 +656,30 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, errors.New(errNotWorkspace)
 	}
 
-	fmt.Printf("###########################################################\n")
-	fmt.Printf("DELETE METHOD CALLED - BEGINNING WORKSPACE DELETION\n")
-	fmt.Printf("###########################################################\n")
+	scalrClient := c.service.(*ScalrService)
 	fmt.Printf("Deleting Scalr workspace: %s\n", *cr.Spec.ForProvider.Name)
 
 	// Get service but don't use it directly in this example
 	_ = c.service.(*ScalrService)
-	workspaceID := ""
-
-	// Get the workspace ID from status if available
-	if cr.Status.AtProvider.WorkspaceId != nil {
-		workspaceID = *cr.Status.AtProvider.WorkspaceId
-	} else {
-		// If we don't have an ID, this might be a cleanup of a failed creation
-		fmt.Println("No workspace ID found in status, assuming resource doesn't exist")
+	workspaceID := cr.Status.AtProvider.WorkspaceId
+	if workspaceID == nil {
 		return managed.ExternalDelete{}, nil
 	}
 
-	// Delete workspace in Scalr using the IACP v3 API
-	//
-	// The API endpoint is: DELETE https://example.scalr.io/api/iacp/v3/workspaces/{workspaceID}
-	//
-	// In a production implementation, this would use the API directly:
-	//
-	// url := fmt.Sprintf("https://example.scalr.io/api/iacp/v3/workspaces/%s", workspaceID)
-	// req, _ := http.NewRequest("DELETE", url, nil)
-	// req.Header.Add("accept", "application/vnd.api+json")
-	// res, err := httpClient.Do(req)
-	// if err != nil {
-	//     return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete workspace")
-	// }
+	url := fmt.Sprintf("https://essity.scalr.io/api/iacp/v3/workspaces/%s", *workspaceID)
 
-	fmt.Printf("Would make API call to https://example.scalr.io/api/iacp/v3/workspaces/%s to delete workspace\n",
-		workspaceID)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, "failed to create DELETE request")
+	}
+	req.Header.Add("accept", "application/vnd.api+json")
+	req.Header.Add("Authorization", "Bearer "+scalrClient.apiToken)
+	res, err := scalrClient.httpClient.Do(req)
+	if err != nil {
+		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete workspace")
+	}
 
-	// No connection details needed for deletion
+	defer res.Body.Close()
 	return managed.ExternalDelete{}, nil
 }
 
