@@ -63,18 +63,20 @@ type ScalrService struct {
 }
 
 var (
-	// newScalrService creates a new Scalr API client using the provided credentials
 	newScalrService = func(creds []byte) (interface{}, error) {
-		// In a real implementation, this would parse the credentials
-		// from the creds byte array, which should contain a JSON like:
-		// {
-		//   "api_token": "your-token",
-		//   "api_base_url": "https://example.scalr.io"
-		// }
+		// Use the credentials passed from the provider config
+		// The creds should contain the API token
+		apiToken := string(creds)
+		if len(apiToken) == 0 {
+			return nil, errors.New(errGetCreds)
+		}
+		apiToken = strings.TrimSpace(apiToken)
+		if strings.ContainsAny(apiToken, "\n\r\t") {
+			return nil, fmt.Errorf("API token contains invalid characters")
+		}
 
-		// For placeholder purposes, just create a basic service
 		return &ScalrService{
-			apiToken:   "your-api-token",
+			apiToken:   apiToken,
 			apiBaseURL: "https://essity.scalr.io",
 			httpClient: &http.Client{},
 		}, nil
@@ -156,12 +158,13 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errGetPC)
 	}
 
+	// Get the Provider credentials
 	cd := pc.Spec.Credentials
+	// Extract the credentials using the CommonCredentialExtractor
 	data, err := resource.CommonCredentialExtractor(ctx, cd.Source, c.kube, cd.CommonCredentialSelectors)
 	if err != nil {
 		return nil, errors.Wrap(err, errGetCreds)
 	}
-
 	svc, err := c.newServiceFn(data)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
@@ -182,9 +185,8 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotWorkspace)
 	}
 
-	fmt.Printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
-	fmt.Printf("OBSERVE METHOD CALLED - CHECKING WORKSPACE EXISTENCE\n")
-	fmt.Printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+	fmt.Printf("Observe method called - checking workspace existence\n")
+	fmt.Printf("Workspace Name: %s\n", *cr.Spec.ForProvider.Name)
 
 	// If the object is being deleted, report that the external resource does not exist.
 	if cr.GetDeletionTimestamp() != nil {
@@ -201,19 +203,16 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	workspaceExists := false
 	var workspaceID string
 
-	// First, try to fetch the workspace by external-name from the API
+	// fetch the workspace by name from the API
 	externalName := *cr.Spec.ForProvider.Name
 	if externalName != "" {
 		fmt.Printf(">>> Checking workspace existence using external name: %s\n", externalName)
-
 		// Query by name and environment
 		url := fmt.Sprintf("%s/api/iacp/v3/workspaces?filter[name]=%s",
 			scalrClient.apiBaseURL, externalName)
 
-		// Create the HTTP request
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			fmt.Printf(">>> Error creating HTTP request: %v\n", err)
 			return managed.ExternalObservation{ResourceExists: false}, nil
 		}
 
@@ -224,7 +223,6 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		// Send the request
 		res, err := scalrClient.httpClient.Do(req)
 		if err != nil {
-			fmt.Printf(">>> Error making HTTP request: %v\n", err)
 			return managed.ExternalObservation{ResourceExists: false}, nil
 		}
 		defer res.Body.Close()
@@ -236,7 +234,8 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			return managed.ExternalObservation{ResourceExists: false}, nil
 		}
 
-		fmt.Printf(">>> API Response: %s\n", string(body))
+		// Log the API response
+		// fmt.Printf(">>> API Response: %s\n", string(body))
 
 		// Parse the response to check if workspace exists
 		var response struct {
