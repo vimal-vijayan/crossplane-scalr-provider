@@ -1,0 +1,57 @@
+{
+  "data": {
+    "attributes": {
+      "auto-queue-runs": "skip_first",
+      "execution-mode": "remote",
+      "iac-platform": "opentofu",
+      "terragrunt": {
+        "include-external-dependencies": false,
+        "use-run-all": false
+      },
+      "vcs-repo": {
+        "dry-runs-enabled": true,
+        "ingress-submodules": false
+      },
+      "auto-apply": false,
+      "name": "testws",
+      "remote-backend": true,
+      "remote-state-sharing": true
+    },
+    "relationships": {
+      "agent-pool": {
+        "data": {
+          "type": "agent-pools"
+        }
+      },
+      "environment": {
+        "data": {
+          "type": "environments",
+          "id": "test"
+        }
+      },
+      "module-version": {
+        "data": {
+          "type": "module-versions"
+        }
+      },
+      "tags": {
+        "data": [
+          {
+            "type": "tags",
+            "id": "test"
+          },
+          {
+            "type": "tags",
+            "id": "test1"
+          }
+        ]
+      },
+      "vcs-provider": {
+        "data": {
+          "type": "vcs-providers"
+        }
+      }
+    },
+    "type": "workspaces"
+  }
+}

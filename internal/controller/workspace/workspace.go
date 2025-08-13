@@ -383,27 +383,20 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	workspaceEnv := *cr.Spec.ForProvider.EnvironmentName
 	workspaceTags := cr.Spec.ForProvider.Tags
 
-	// Create tags JSON structures
-	// var tagsJSON []map[string]string
 	fmt.Printf("Tags came in %v\n", workspaceTags)
 
-	// Marshal tags to JSON string
-	// tagsBytes, err := json.Marshal(map[string]interface{}{
-	// 	"data": tagsJSON,
-	// })
-	// if err != nil {
-	// 	return managed.ExternalCreation{}, errors.Wrap(err, "failed to marshal tags JSON")
-	// }
-	// tagsJSONStr := string(tagsBytes)
-	// fmt.Println(tagsJSONStr)
-
-	// Create the payload JSON
 	payloadStr := fmt.Sprintf(`{
 		"data": {
 			"type": "workspaces",
 			"attributes": {
+				"auto-queue-runs": "skip_first",
+				"execution-mode": "remote",
+				"iac-platform": "opentofu",
+				"auto-apply": false,
+				"deletion-protection-enabled": false,
 				"name": "%s",
-				"auto-apply": true
+				"remote-backend": true,
+				"remote-state-sharing": true
 			},
 			"relationships": {
 				"environment": {
