@@ -1,0 +1,60 @@
+# Workspace without vcs
+curl --request POST \
+     --url https://example.scalr.io/api/iacp/v3/workspaces \
+     --header 'accept: application/vnd.api+json' \
+     --header 'content-type: application/vnd.api+json' \
+     --data '
+{
+  "data": {
+    "type": "workspaces",
+    "attributes": {
+      "name": "vcs-less",
+      "auto-apply": true
+    },
+    "relationships": {
+      "environment": {
+        "data": {
+          "type": "environments",
+          "id": "env-sfuari395m7sck1"
+        }
+      }
+    }
+  }
+}
+'
+
+workspace with tags
+
+curl --request POST \
+     --url https://example.scalr.io/api/iacp/v3/workspaces \
+     --header 'accept: application/vnd.api+json' \
+     --header 'content-type: application/vnd.api+json' \
+     --data '{
+  "data": {
+    "type": "workspaces",
+    "attributes": {
+      "name": "my-workspace"
+    },
+    "relationships": {
+      "environment": {
+        "data": {
+          "id": "env-xxx",
+          "type": "environments"
+        }
+      },
+      "tags": {
+        "data": [
+          {
+            "id": "tag-xxx",
+            "type": "tags"
+          },
+          {
+            "id": "tag-yyy",
+            "type": "tags"
+          }
+        ]
+      }
+    },
+
+  }
+}'

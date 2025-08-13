@@ -379,6 +379,24 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	// Build the API URL - use the client's configured base URL
 	url := scalrClient.apiBaseURL + "/api/iacp/v3/workspaces"
 
+	workspaceName := *cr.Spec.ForProvider.Name
+	workspaceEnv := *cr.Spec.ForProvider.EnvironmentName
+	// workspaceTags := cr.Spec.ForProvider.Tags
+
+	// Create tags JSON structures
+	// var tagsJSON []map[string]string
+	// fmt.Printf("Tags came in %v\n", workspaceTags)
+
+	// Marshal tags to JSON string
+	// tagsBytes, err := json.Marshal(map[string]interface{}{
+	// 	"data": tagsJSON,
+	// })
+	// if err != nil {
+	// 	return managed.ExternalCreation{}, errors.Wrap(err, "failed to marshal tags JSON")
+	// }
+	// tagsJSONStr := string(tagsBytes)
+	// fmt.Println(tagsJSONStr)
+
 	// Create the payload JSON
 	payloadStr := fmt.Sprintf(`{
 		"data": {
@@ -396,7 +414,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 				}
 			}
 		}
-	}`, *cr.Spec.ForProvider.Name, *cr.Spec.ForProvider.EnvironmentName)
+	}`, workspaceName, workspaceEnv)
 
 	// Create a reader for the payload
 	payload := strings.NewReader(payloadStr)
@@ -549,15 +567,15 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 	fmt.Printf("  Environment: %s\n", *cr.Spec.ForProvider.EnvironmentName)
 
-	// Log the tags if present
-	if len(cr.Spec.ForProvider.Tags) > 0 {
-		fmt.Printf("  Tags:\n")
-		for k, v := range cr.Spec.ForProvider.Tags {
-			fmt.Printf("    %s: %s\n", k, v)
-		}
-	} else {
-		fmt.Printf("  Tags: none\n")
+	// Update tags on the workspace if exists
+	_ = `{
+  "data": [
+	{
+	  "type": "tags",
+	  "id": "type-v1"
 	}
+  ]
+}`
 
 	// Update the status with the workspace ID
 	cr.Status.AtProvider.WorkspaceId = &workspaceID

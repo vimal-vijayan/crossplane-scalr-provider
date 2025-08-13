@@ -14,13 +14,18 @@ type WorkspaceParameters struct {
 	// +kubebuilder:validation:MaxLength=100
 	Name *string `json:"name"`
 	// +kubebuilder:validation:Optional
-	Description *string `json:"description,omitempty"`
-	// +kubebuilder:validation:Required
 	EnvironmentName *string `json:"environmentName"`
 	// +kubebuilder:validation:Optional
-	Tags map[string]string `json:"tags,omitempty"`
+	Tags []string `json:"tags,omitempty"`
+	// +kubebuilder:validation:Optional
+	Description *string `json:"description,omitempty"`
 	// +kubebuilder:validation:Optional
 	Provider map[string]string `json:"provider,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=100
+	// +kubebuilder:validation:Required
+	Organization *string `json:"organization,omitempty"`
 }
 
 type WorkspaceSpec struct {

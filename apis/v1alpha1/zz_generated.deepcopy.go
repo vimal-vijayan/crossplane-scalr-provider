@@ -355,11 +355,6 @@ func (in *WorkspaceParameters) DeepCopyInto(out *WorkspaceParameters) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Description != nil {
-		in, out := &in.Description, &out.Description
-		*out = new(string)
-		**out = **in
-	}
 	if in.EnvironmentName != nil {
 		in, out := &in.EnvironmentName, &out.EnvironmentName
 		*out = new(string)
@@ -367,10 +362,13 @@ func (in *WorkspaceParameters) DeepCopyInto(out *WorkspaceParameters) {
 	}
 	if in.Tags != nil {
 		in, out := &in.Tags, &out.Tags
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.Description != nil {
+		in, out := &in.Description, &out.Description
+		*out = new(string)
+		**out = **in
 	}
 	if in.Provider != nil {
 		in, out := &in.Provider, &out.Provider
@@ -378,6 +376,11 @@ func (in *WorkspaceParameters) DeepCopyInto(out *WorkspaceParameters) {
 		for key, val := range *in {
 			(*out)[key] = val
 		}
+	}
+	if in.Organization != nil {
+		in, out := &in.Organization, &out.Organization
+		*out = new(string)
+		**out = **in
 	}
 }
 

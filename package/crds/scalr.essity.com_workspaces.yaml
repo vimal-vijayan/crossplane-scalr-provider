@@ -80,16 +80,19 @@ spec:
                     maxLength: 100
                     minLength: 1
                     type: string
+                  organization:
+                    maxLength: 100
+                    minLength: 1
+                    type: string
                   provider:
                     additionalProperties:
                       type: string
                     type: object
                   tags:
-                    additionalProperties:
+                    items:
                       type: string
-                    type: object
+                    type: array
                 required:
-                - environmentName
                 - name
                 type: object
               managementPolicies:

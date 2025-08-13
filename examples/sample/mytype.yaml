@@ -8,7 +8,7 @@ spec:
     environmentName: env-v0otqrn3npkjd8fqk
     description: Example workspace for demonstration
     tags:
-      team: devops
-      project: demo
+      - "demo"
+      - "environment: staging"
   providerConfigRef:
     name: default
