@@ -64,10 +64,11 @@ type RunnerList struct {
 }
 
 var (
-	RunnerKind           = reflect.TypeOf(Runner{}).Name()
-	RunnerGroupKind      = schema.GroupKind{Group: Group, Kind: RunnerKind}.String()
-	RunnerKindAPIVersion = RunnerKind + "." + SchemeGroupVersion.String()
-	RunnerGroupVersion   = SchemeGroupVersion.String()
+	RunnerKind             = reflect.TypeOf(Runner{}).Name()
+	RunnerGroupKind        = schema.GroupKind{Group: Group, Kind: RunnerKind}.String()
+	RunnerKindAPIVersion   = RunnerKind + "." + SchemeGroupVersion.String()
+	RunnerGroupVersion     = SchemeGroupVersion.String()
+	RunnerGroupVersionKind = SchemeGroupVersion.WithKind(RunnerKind)
 )
 
 func init() {
