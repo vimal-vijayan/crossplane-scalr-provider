@@ -1,0 +1,21 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: runtimeconfig-provider-template
+spec:
+  deploymentTemplate:
+    spec:
+      selector:
+        matchLabels:
+          control-plane: provider-template
+      template:
+        metadata:
+          labels:
+            control-plane: provider-template
+        spec:
+          containers:
+          - name: package-runtime
+            args:
+            - "--poll=30m"
+            # The selector and labels above must match what the package runtime Deployment uses.
+            # Adjust the label keys/values if your package runtime uses different labels.

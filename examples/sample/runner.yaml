@@ -11,8 +11,6 @@ spec:
     source: "https://github.com/vimal-vijayan/my-app.git"
     env:
       TF_LOG: "INFO"
-      AWS_DEFAULT_REGION: "us-west-2"
-      KUBE_CONFIG_PATH: "/tmp/kubeconfig"
       TF_WORKSPACE: "vimals-workspace-01"
     # vars:
     #   cluster_name: "my-k8s-cluster"
