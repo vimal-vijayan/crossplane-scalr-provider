@@ -5,7 +5,7 @@ metadata:
   name: scalr-provider-secret
 type: Opaque
 data:
-  credentials: ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhZMk5mYVdRaU9pSmhZMk10ZGpCdmRHZ3dkblp3Y0djeGJtaHdZM0FpTENKbGVIQWlPakUzTlRZd05qWXpORFFzSW1semN5STZJbk5qWVd4eU9uVnpaWElpTENKcWRHa2lPaUpoZEMxMk1HOTFPV0ZtWlRrMWNqSTVOMkZuY2lKOS4yZlRzVzNXOVBUWnJTOG9GUjZmem5vczl4eHNIY0ltMmxzM3pZT05Wa0xvCg==
+  credentials: ""
 
 ---
 apiVersion: scalr.essity.com/v1alpha1
