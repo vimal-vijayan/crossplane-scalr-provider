@@ -5,6 +5,7 @@ metadata:
 spec:
   forProvider:
     name: vimals-workspace-01
+    organization: cet-launchpad
     environmentName: env-v0otqrn3npkjd8fqk
     attributes:
       executionMode: "remote"
@@ -14,69 +15,3 @@ spec:
       - "environment: staging"
   providerConfigRef:
     name: default
-
-
-# {
-#   "data": {
-#     "attributes": {
-#       "auto-queue-runs": "skip_first",
-#       "execution-mode": "remote",
-#       "iac-platform": "terraform",
-#       "terragrunt": {
-#         "include-external-dependencies": false,
-#         "use-run-all": false
-#       },
-#       "vcs-repo": {
-#         "dry-runs-enabled": true,
-#         "ingress-submodules": false
-#       }s
-#     },
-#     "relationships": {
-#       "agent-pool": {
-#         "data": {
-#           "type": "agent-pools"
-#         }
-#       },
-#       "environment": {
-#         "data": {
-#           "type": "environments",
-#           "id": "test"
-#         }
-#       },
-#       "module-version": {
-#         "data": {
-#           "type": "module-versions"
-#         }
-#       },
-#       "tags": {
-#         "data": [
-#           {
-#             "type": "tags",
-#             "id": "reasdsa"
-#           }
-#         ]
-#       },
-#       "vcs-provider": {
-#         "data": {
-#           "type": "vcs-providers"
-#         }
-#       }
-#     },
-#     "type": "workspaces"
-#   }
-# }
-
-# {
-#   "data": {
-
-#     "relationships": {
-#       "environment": {
-#         "data": {
-#           "type": "environments",
-#           "id": "test"
-#         }
-#       },
-#     },
-#     "type": "workspaces"
-#   }
-# }
