@@ -1,0 +1,25 @@
+apiVersion: iacorchestrator.essity.com/v1alpha1
+kind: Runner
+metadata:
+  name: sample-terraform-runner
+  labels:
+    app: terraform-runner
+    environment: development
+spec:
+  forProvider:
+    name: "my-terraform-runner"
+    source: "https://github.com/example/terraform-modules.git//modules/infrastructure"
+    env:
+      TF_LOG: "INFO"
+      AWS_DEFAULT_REGION: "us-west-2"
+      KUBE_CONFIG_PATH: "/tmp/kubeconfig"
+    vars:
+      cluster_name: "my-k8s-cluster"
+      node_count: "3"
+      instance_type: "t3.medium"
+      environment: "development"
+  writeConnectionSecretsToRef:
+    name: runner-connection-secret
+    namespace: crossplane-system
+  providerConfigRef:
+    name: default
