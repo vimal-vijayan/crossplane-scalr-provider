@@ -19,6 +19,8 @@ package runner
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
 
@@ -38,7 +40,7 @@ import (
 	runner "github.com/crossplane/provider-template/apis/runner/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-template/apis/v1alpha1"
 
-	// opentofu "github.com/crossplane/provider-template/internal/controller/opentofu"
+	opentofu "github.com/crossplane/provider-template/internal/controller/opentofu"
 	"github.com/crossplane/provider-template/internal/features"
 )
 
@@ -49,13 +51,25 @@ const (
 	errGetCreds     = "cannot get credentials"
 
 	errNewClient = "cannot create new Service"
+	
+	// Runner finalizer
+	runnerFinalizer = "runner.scalr.essity.com/finalizer"
 )
 
-// A NoOpService does nothing.
-type NoOpService struct{}
+// A TofuService manages OpenTofu operations.
+type TofuService struct {
+	runner opentofu.Runner
+}
+
+// NewTofuService creates a new TofuService
+func NewTofuService() *TofuService {
+	return &TofuService{
+		runner: opentofu.NewDefaultRunner(),
+	}
+}
 
 var (
-	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
+	newTofuService = func(_ []byte) (interface{}, error) { return NewTofuService(), nil }
 )
 
 // Setup adds a controller that reconciles Runner managed resources.
@@ -73,7 +87,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: newNoOpService}),
+			newServiceFn: newTofuService}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
@@ -147,15 +161,19 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errNewClient)
 	}
 
-	return &external{service: svc}, nil
+	tofuService, ok := svc.(*TofuService)
+	if !ok {
+		return nil, errors.New("service is not a TofuService")
+	}
+
+	return &external{service: tofuService}, nil
 }
 
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
-	// A 'client' used to connect to the external resource API. In practice this
-	// would be something like an AWS SDK client.
-	service interface{}
+	// TofuService for managing OpenTofu operations
+	service *TofuService
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
@@ -170,24 +188,86 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	name := *cr.Spec.ForProvider.Name
+	workingDir := c.getWorkingDir(name)
 
-	// Always check if the external resource actually exists
-	// In a real implementation, you would make an API call to check existence
-	resourceExists := c.checkExternalResourceExists(ctx, name)
-	
+	// Check if deletion is in progress
 	if cr.GetDeletionTimestamp() != nil {
-		fmt.Printf("Resource %s is marked for deletion, external resource exists: %t\n", name, resourceExists)
+		fmt.Printf("Resource %s is marked for deletion\n", name)
+		
+		// Check if working directory exists
+		if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+			// Already cleaned up
+			return managed.ExternalObservation{
+				ResourceExists:   false,
+				ResourceUpToDate: false,
+			}, nil
+		}
+		
+		// Run tofu plan -destroy -detailed-exitcode to check if there's anything to destroy
+		planResult, err := c.service.runner.Plan(ctx, opentofu.PlanOptions{
+			WorkingDir:       workingDir,
+			DetailedExitCode: true,
+			Destroy:          true,
+			Variables:        cr.Spec.ForProvider.Vars,
+			Environment:      cr.Spec.ForProvider.Env,
+		})
+		
+		if err != nil {
+			return managed.ExternalObservation{}, fmt.Errorf("failed to run destroy plan: %w", err)
+		}
+		
+		// Exit code 2 means changes are present (something to destroy)
+		// Exit code 0 means no changes (nothing to destroy)
+		if planResult.ExitCode == 0 {
+			// Nothing to destroy, can complete deletion
+			return managed.ExternalObservation{
+				ResourceExists:   false,
+				ResourceUpToDate: false,
+			}, nil
+		} else if planResult.ExitCode == 2 {
+			// Something to destroy
+			return managed.ExternalObservation{
+				ResourceExists:   true,
+				ResourceUpToDate: false,
+			}, nil
+		} else {
+			return managed.ExternalObservation{}, fmt.Errorf("destroy plan failed with exit code %d: %s", planResult.ExitCode, planResult.Stderr)
+		}
+	}
+
+	// Check if working directory exists (indicates resource was created)
+	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+		// Resource doesn't exist yet
 		return managed.ExternalObservation{
-			ResourceExists:   resourceExists,
+			ResourceExists:   false,
 			ResourceUpToDate: false,
 		}, nil
 	}
 
-	// For non-deletion case - assume resource exists initially
-	fmt.Printf("Checking if runner %s exists\n", name)
+	// Run tofu plan -detailed-exitcode to check if changes are needed
+	planResult, err := c.service.runner.Plan(ctx, opentofu.PlanOptions{
+		WorkingDir:       workingDir,
+		DetailedExitCode: true,
+		Variables:        cr.Spec.ForProvider.Vars,
+		Environment:      cr.Spec.ForProvider.Env,
+	})
+	
+	if err != nil {
+		return managed.ExternalObservation{}, fmt.Errorf("failed to run plan: %w", err)
+	}
+
+	// Exit code 0 means no changes needed
+	// Exit code 2 means changes are present
+	upToDate := planResult.ExitCode == 0
+	
+	if planResult.ExitCode != 0 && planResult.ExitCode != 2 {
+		return managed.ExternalObservation{}, fmt.Errorf("plan failed with exit code %d: %s", planResult.ExitCode, planResult.Stderr)
+	}
+
+	fmt.Printf("Runner %s exists, up-to-date: %t\n", name, upToDate)
 	return managed.ExternalObservation{
 		ResourceExists:   true,
-		ResourceUpToDate: true,
+		ResourceUpToDate: upToDate,
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -198,11 +278,35 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.New(errNotMyType)
 	}
 
-	fmt.Printf("Creating: %+v", cr)
+	name := *cr.Spec.ForProvider.Name
+	workingDir := c.getWorkingDir(name)
+	
+	fmt.Printf("Creating runner: %s\n", name)
 
+	// Step 1: Clone the repository
+	cloneOpts := opentofu.CloneOptions{
+		Repository: cr.Spec.ForProvider.Source,
+		Directory:  workingDir,
+	}
+	
+	if err := c.service.runner.CloneRepository(ctx, cloneOpts); err != nil {
+		return managed.ExternalCreation{}, fmt.Errorf("failed to clone repository: %w", err)
+	}
+
+	// Step 2: Apply with auto-approve (init will be called automatically)
+	applyOpts := opentofu.ApplyOptions{
+		WorkingDir:  workingDir,
+		AutoApprove: true,
+		Environment: cr.Spec.ForProvider.Env,
+	}
+	
+	applyResult, err := c.service.runner.Apply(ctx, applyOpts)
+	if err != nil || applyResult.ExitCode != 0 {
+		return managed.ExternalCreation{}, fmt.Errorf("failed to apply tofu configuration: %w, output: %s", err, applyResult.Stderr)
+	}
+
+	fmt.Printf("Successfully created runner: %s\n", name)
 	return managed.ExternalCreation{
-		// Optionally return any details that may be required to connect to the
-		// external resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -213,11 +317,25 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalUpdate{}, errors.New(errNotMyType)
 	}
 
-	fmt.Printf("Updating: %+v", cr)
+	name := *cr.Spec.ForProvider.Name
+	workingDir := c.getWorkingDir(name)
+	
+	fmt.Printf("Updating runner: %s\n", name)
 
+	// Apply changes (OpenTofu will automatically detect what needs to be updated)
+	applyOpts := opentofu.ApplyOptions{
+		WorkingDir:  workingDir,
+		AutoApprove: true,
+		Environment: cr.Spec.ForProvider.Env,
+	}
+	
+	applyResult, err := c.service.runner.Apply(ctx, applyOpts)
+	if err != nil || applyResult.ExitCode != 0 {
+		return managed.ExternalUpdate{}, fmt.Errorf("failed to update tofu configuration: %w, output: %s", err, applyResult.Stderr)
+	}
+
+	fmt.Printf("Successfully updated runner: %s\n", name)
 	return managed.ExternalUpdate{
-		// Optionally return any details that may be required to connect to the
-		// external resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -234,13 +352,65 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	runnerName := *cr.Spec.ForProvider.Name
+	workingDir := c.getWorkingDir(runnerName)
+	
 	fmt.Printf("Starting deletion process for runner: %s\n", runnerName)
 
-	// Call the actual deletion logic
-	err := c.deleteRunner(ctx, runnerName)
+	// Check if working directory exists
+	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+		fmt.Printf("Working directory does not exist, deletion complete: %s\n", runnerName)
+		return managed.ExternalDelete{}, nil
+	}
+
+	// Step 1: Run tofu destroy with auto-approve
+	destroyOpts := opentofu.DestroyOptions{
+		WorkingDir:  workingDir,
+		AutoApprove: true,
+		Variables:   cr.Spec.ForProvider.Vars,
+		Environment: cr.Spec.ForProvider.Env,
+	}
+	
+	destroyResult, err := c.service.runner.Destroy(ctx, destroyOpts)
 	if err != nil {
-		fmt.Printf("Error deleting runner %s: %v\n", runnerName, err)
-		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete runner")
+		return managed.ExternalDelete{}, fmt.Errorf("failed to destroy tofu resources: %w", err)
+	}
+	
+	if destroyResult.ExitCode != 0 {
+		return managed.ExternalDelete{}, fmt.Errorf("destroy failed with exit code %d: %s", destroyResult.ExitCode, destroyResult.Stderr)
+	}
+
+	// Step 2: Check if anything is left to destroy using plan -destroy -detailed-exitcode
+	planResult, err := c.service.runner.Plan(ctx, opentofu.PlanOptions{
+		WorkingDir:       workingDir,
+		DetailedExitCode: true,
+		Destroy:          true,
+		Variables:        cr.Spec.ForProvider.Vars,
+		Environment:      cr.Spec.ForProvider.Env,
+	})
+	
+	if err != nil {
+		return managed.ExternalDelete{}, fmt.Errorf("failed to run destroy plan check: %w", err)
+	}
+
+	// If exit code is 2, there are still resources to destroy
+	if planResult.ExitCode == 2 {
+		fmt.Printf("Still resources to destroy for runner: %s, running destroy again\n", runnerName)
+		
+		// Run destroy again
+		destroyResult, err = c.service.runner.Destroy(ctx, destroyOpts)
+		if err != nil {
+			return managed.ExternalDelete{}, fmt.Errorf("failed to destroy remaining tofu resources: %w", err)
+		}
+		
+		if destroyResult.ExitCode != 0 {
+			return managed.ExternalDelete{}, fmt.Errorf("second destroy failed with exit code %d: %s", destroyResult.ExitCode, destroyResult.Stderr)
+		}
+	}
+
+	// Step 3: Clean up the working directory
+	if err := c.service.runner.Cleanup(ctx, workingDir); err != nil {
+		fmt.Printf("Warning: failed to cleanup working directory %s: %v\n", workingDir, err)
+		// Don't fail deletion due to cleanup failure
 	}
 
 	fmt.Printf("Successfully deleted runner: %s\n", runnerName)
@@ -251,20 +421,7 @@ func (c *external) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-func (c *external) deleteRunner(ctx context.Context, name string) error {
-	// Simulate deletion logic
-	fmt.Printf("Simulating deletion of runner: %s\n", name)
-	// In a real implementation, you would call the external API to delete the resource here.
-	return nil
-}
-
-func (c *external) checkExternalResourceExists(ctx context.Context, name string) bool {
-	// Simple simulation: assume external resource is deleted after Delete() is called
-	// In a real implementation, you would call the external API to check if the resource exists
-	fmt.Printf("Checking external resource existence for: %s\n", name)
-	
-	// For simulation: return false so deletion can complete
-	// In real implementation, this would be something like:
-	// return c.apiClient.ResourceExists(name)
-	return false
+// getWorkingDir returns the working directory for a runner
+func (c *external) getWorkingDir(name string) string {
+	return filepath.Join("/tmp", "tofu-runners", name)
 }
