@@ -20,6 +20,7 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
+	runner "github.com/crossplane/provider-template/apis/runner/v1alpha1"
 	"github.com/crossplane/provider-template/apis/v1alpha1"
 )
 
@@ -28,6 +29,7 @@ func init() {
 	AddToSchemes = append(AddToSchemes,
 		v1alpha1.SchemeBuilder.AddToScheme,
 		// samplev1alpha1.SchemeBuilder.AddToScheme,
+		runner.SchemeBuilder.AddToScheme,
 	)
 }
 

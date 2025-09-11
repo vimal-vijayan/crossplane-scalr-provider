@@ -1,4 +1,4 @@
-package runner
+package v1alpha1
 
 import (
 	"reflect"
@@ -42,6 +42,7 @@ type RunnerStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
+// +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,iacorchestrator}
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="ID",type="string",JSONPath=".status.atProvider.id"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
