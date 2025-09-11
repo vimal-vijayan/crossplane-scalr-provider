@@ -18,8 +18,5 @@ spec:
       node_count: "3"
       instance_type: "t3.medium"
       environment: "development"
-  writeConnectionSecretsToRef:
-    name: runner-connection-secret
-    namespace: crossplane-system
   providerConfigRef:
     name: default
