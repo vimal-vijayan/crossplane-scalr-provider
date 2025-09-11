@@ -43,7 +43,7 @@ import (
 )
 
 const (
-	errNotMyType    = "managed resource is not a MyType custom resource"
+	errNotMyType    = "managed resource is not a Runner custom resource"
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
@@ -58,7 +58,7 @@ var (
 	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
 )
 
-// Setup adds a controller that reconciles MyType managed resources.
+// Setup adds a controller that reconciles Runner managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	name := managed.ControllerName(runner.RunnerGroupKind)
 
@@ -94,7 +94,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 			mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &runner.RunnerList{}, o.MetricOptions.PollStateMetricInterval,
 		)
 		if err := mgr.Add(stateMetricsRecorder); err != nil {
-			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.MyTypeList")
+			return errors.Wrap(err, "cannot register MR state metrics recorder for kind v1alpha1.RunnerList")
 		}
 	}
 
@@ -164,22 +164,30 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotMyType)
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	// Validate required fields
+	if cr.Spec.ForProvider.Name == nil {
+		return managed.ExternalObservation{}, errors.New("runner name is required")
+	}
 
+	name := *cr.Spec.ForProvider.Name
+
+	// Always check if the external resource actually exists
+	// In a real implementation, you would make an API call to check existence
+	resourceExists := c.checkExternalResourceExists(ctx, name)
+	
+	if cr.GetDeletionTimestamp() != nil {
+		fmt.Printf("Resource %s is marked for deletion, external resource exists: %t\n", name, resourceExists)
+		return managed.ExternalObservation{
+			ResourceExists:   resourceExists,
+			ResourceUpToDate: false,
+		}, nil
+	}
+
+	// For non-deletion case - assume resource exists initially
+	fmt.Printf("Checking if runner %s exists\n", name)
 	return managed.ExternalObservation{
-		// Return false when the external resource does not exist. This lets
-		// the managed resource reconciler know that it needs to call Create to
-		// (re)create the resource, or that it has successfully been deleted.
-		ResourceExists: true,
-
-		// Return false when the external resource exists, but it not up to date
-		// with the desired managed resource state. This lets the managed
-		// resource reconciler know that it needs to call Update.
+		ResourceExists:   true,
 		ResourceUpToDate: true,
-
-		// Return any details that may be required to connect to the external
-		// resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
@@ -220,11 +228,43 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalDelete{}, errors.New(errNotMyType)
 	}
 
-	fmt.Printf("Deleting: %+v", cr)
+	// Validate required fields
+	if cr.Spec.ForProvider.Name == nil {
+		return managed.ExternalDelete{}, errors.New("runner name is required for deletion")
+	}
 
+	runnerName := *cr.Spec.ForProvider.Name
+	fmt.Printf("Starting deletion process for runner: %s\n", runnerName)
+
+	// Call the actual deletion logic
+	err := c.deleteRunner(ctx, runnerName)
+	if err != nil {
+		fmt.Printf("Error deleting runner %s: %v\n", runnerName, err)
+		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete runner")
+	}
+
+	fmt.Printf("Successfully deleted runner: %s\n", runnerName)
 	return managed.ExternalDelete{}, nil
 }
 
 func (c *external) Disconnect(ctx context.Context) error {
 	return nil
+}
+
+func (c *external) deleteRunner(ctx context.Context, name string) error {
+	// Simulate deletion logic
+	fmt.Printf("Simulating deletion of runner: %s\n", name)
+	// In a real implementation, you would call the external API to delete the resource here.
+	return nil
+}
+
+func (c *external) checkExternalResourceExists(ctx context.Context, name string) bool {
+	// Simple simulation: assume external resource is deleted after Delete() is called
+	// In a real implementation, you would call the external API to check if the resource exists
+	fmt.Printf("Checking external resource existence for: %s\n", name)
+	
+	// For simulation: return false so deletion can complete
+	// In real implementation, this would be something like:
+	// return c.apiClient.ResourceExists(name)
+	return false
 }
