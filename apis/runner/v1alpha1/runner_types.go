@@ -15,14 +15,15 @@ type RunnerParameters struct {
 	Name *string `json:"name"`
 	// +kubebuilder:validation:Optional
 	Provider map[string]string `json:"provider,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default="opentofu"
+	Driver *string `json:"driver,omitempty"`
 	// +kubebuilder:validation:Required
 	Source string `json:"source"`
 	// +kubebuilder:validation:Optional
 	Env map[string]string `json:"env,omitempty"`
 	// +kubebuilder:validation:Optional
 	Vars map[string]string `json:"vars,omitempty"`
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=false
 }
 
 type RunnerSpec struct {

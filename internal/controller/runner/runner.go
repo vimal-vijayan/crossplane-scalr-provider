@@ -204,12 +204,18 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 		
 		// Run tofu plan -destroy -detailed-exitcode to check if there's anything to destroy
+		driver := "opentofu" // default
+		if cr.Spec.ForProvider.Driver != nil {
+			driver = *cr.Spec.ForProvider.Driver
+		}
+		
 		planResult, err := c.service.runner.Plan(ctx, opentofu.PlanOptions{
 			WorkingDir:       workingDir,
 			DetailedExitCode: true,
 			Destroy:          true,
 			Variables:        cr.Spec.ForProvider.Vars,
 			Environment:      cr.Spec.ForProvider.Env,
+			Driver:           driver,
 		})
 		
 		if err != nil {

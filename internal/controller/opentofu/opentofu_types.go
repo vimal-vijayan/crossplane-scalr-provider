@@ -8,6 +8,7 @@ type InitOptions struct {
 	WorkingDir  string            `json:"workingDir,omitempty"`
 	Environment map[string]string `json:"environment,omitempty"`
 	ExtraArgs   []string          `json:"extraArgs,omitempty"`
+	Driver      string            `json:"driver,omitempty"` // "opentofu" or "terragrunt"
 }
 
 type PlanOptions struct {
@@ -18,6 +19,7 @@ type PlanOptions struct {
 	DetailedExitCode bool              `json:"detailedExitCode,omitempty"`
 	Destroy          bool              `json:"destroy,omitempty"`
 	ExtraArgs        []string          `json:"extraArgs,omitempty"`
+	Driver           string            `json:"driver,omitempty"` // "opentofu" or "terragrunt"
 }
 
 type ApplyOptions struct {
@@ -26,6 +28,7 @@ type ApplyOptions struct {
 	AutoApprove bool              `json:"autoApprove,omitempty"`
 	PlanFile    string            `json:"planFile,omitempty"`
 	ExtraArgs   []string          `json:"extraArgs,omitempty"`
+	Driver      string            `json:"driver,omitempty"` // "opentofu" or "terragrunt"
 }
 
 type DestroyOptions struct {
@@ -35,6 +38,7 @@ type DestroyOptions struct {
 	Environment map[string]string `json:"environment,omitempty"`
 	AutoApprove bool              `json:"autoApprove,omitempty"`
 	ExtraArgs   []string          `json:"extraArgs,omitempty"`
+	Driver      string            `json:"driver,omitempty"` // "opentofu" or "terragrunt"
 }
 
 type CloneOptions struct {

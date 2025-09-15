@@ -9,6 +9,7 @@ spec:
   forProvider:
     name: "my-terraform-runner"
     source: "https://github.com/vimal-vijayan/my-app.git"
+    driver: "terragrunt"
     env:
       TF_LOG: "INFO"
       TF_WORKSPACE: "vimals-workspace-01"

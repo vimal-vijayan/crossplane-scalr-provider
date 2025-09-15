@@ -58,30 +58,66 @@ func (r *DefaultRunner) CloneRepository(ctx context.Context, opts CloneOptions) 
 	return nil
 }
 
-// Init runs tofu init
+// Init runs tofu/terragrunt init
 func (r *DefaultRunner) Init(ctx context.Context, opts InitOptions) (*CommandResult, error) {
-	r.logger.Info("Running tofu init", "workingDir", opts.WorkingDir)
+	driver := opts.Driver
+	if driver == "" {
+		driver = "opentofu" // default to opentofu
+	}
 	
-	args := []string{"init"}
+	r.logger.Info("Running init", "driver", driver, "workingDir", opts.WorkingDir)
+	
+	var cmd string
+	var args []string
+	
+	switch driver {
+	case "terragrunt":
+		cmd = "terragrunt"
+		args = []string{"init"}
+	case "opentofu":
+		fallthrough
+	default:
+		cmd = "tofu"
+		args = []string{"init"}
+	}
+	
 	args = append(args, opts.ExtraArgs...)
 	
-	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, args...)
+	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, cmd, args...)
 }
 
-// Plan runs tofu plan
+// Plan runs tofu/terragrunt plan
 func (r *DefaultRunner) Plan(ctx context.Context, opts PlanOptions) (*CommandResult, error) {
-	r.logger.Info("Running tofu plan", "workingDir", opts.WorkingDir, "destroy", opts.Destroy)
+	driver := opts.Driver
+	if driver == "" {
+		driver = "opentofu" // default to opentofu
+	}
+	
+	r.logger.Info("Running plan", "driver", driver, "workingDir", opts.WorkingDir, "destroy", opts.Destroy)
 	
 	// Always run init before plan
 	initResult, err := r.Init(ctx, InitOptions{
 		WorkingDir:  opts.WorkingDir,
 		Environment: opts.Environment,
+		Driver:      driver,
 	})
 	if err != nil || initResult.ExitCode != 0 {
 		return nil, fmt.Errorf("failed to initialize before plan: %w, output: %s", err, initResult.Stderr)
 	}
 	
-	args := []string{"plan"}
+	var cmd string
+	var args []string
+	
+	switch driver {
+	case "terragrunt":
+		cmd = "terragrunt"
+		args = []string{"plan"}
+	case "opentofu":
+		fallthrough
+	default:
+		cmd = "tofu"
+		args = []string{"plan"}
+	}
 	
 	if opts.Destroy {
 		args = append(args, "-destroy")
@@ -105,23 +141,41 @@ func (r *DefaultRunner) Plan(ctx context.Context, opts PlanOptions) (*CommandRes
 	
 	args = append(args, opts.ExtraArgs...)
 	
-	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, args...)
+	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, cmd, args...)
 }
 
-// Apply runs tofu apply
+// Apply runs tofu/terragrunt apply
 func (r *DefaultRunner) Apply(ctx context.Context, opts ApplyOptions) (*CommandResult, error) {
-	r.logger.Info("Running tofu apply", "workingDir", opts.WorkingDir, "autoApprove", opts.AutoApprove)
+	driver := opts.Driver
+	if driver == "" {
+		driver = "opentofu" // default to opentofu
+	}
+	
+	r.logger.Info("Running apply", "driver", driver, "workingDir", opts.WorkingDir, "autoApprove", opts.AutoApprove)
 	
 	// Always run init before apply
 	initResult, err := r.Init(ctx, InitOptions{
 		WorkingDir:  opts.WorkingDir,
 		Environment: opts.Environment,
+		Driver:      driver,
 	})
 	if err != nil || initResult.ExitCode != 0 {
 		return nil, fmt.Errorf("failed to initialize before apply: %w, output: %s", err, initResult.Stderr)
 	}
 	
-	args := []string{"apply"}
+	var cmd string
+	var args []string
+	
+	switch driver {
+	case "terragrunt":
+		cmd = "terragrunt"
+		args = []string{"apply"}
+	case "opentofu":
+		fallthrough
+	default:
+		cmd = "tofu"
+		args = []string{"apply"}
+	}
 	
 	if opts.AutoApprove {
 		args = append(args, "-auto-approve")
@@ -138,23 +192,41 @@ func (r *DefaultRunner) Apply(ctx context.Context, opts ApplyOptions) (*CommandR
 	
 	args = append(args, opts.ExtraArgs...)
 	
-	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, args...)
+	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, cmd, args...)
 }
 
-// Destroy runs tofu destroy
+// Destroy runs tofu/terragrunt destroy
 func (r *DefaultRunner) Destroy(ctx context.Context, opts DestroyOptions) (*CommandResult, error) {
-	r.logger.Info("Running tofu destroy", "workingDir", opts.WorkingDir, "autoApprove", opts.AutoApprove)
+	driver := opts.Driver
+	if driver == "" {
+		driver = "opentofu" // default to opentofu
+	}
+	
+	r.logger.Info("Running destroy", "driver", driver, "workingDir", opts.WorkingDir, "autoApprove", opts.AutoApprove)
 	
 	// Always run init before destroy
 	initResult, err := r.Init(ctx, InitOptions{
 		WorkingDir:  opts.WorkingDir,
 		Environment: opts.Environment,
+		Driver:      driver,
 	})
 	if err != nil || initResult.ExitCode != 0 {
 		return nil, fmt.Errorf("failed to initialize before destroy: %w, output: %s", err, initResult.Stderr)
 	}
 	
-	args := []string{"destroy"}
+	var cmd string
+	var args []string
+	
+	switch driver {
+	case "terragrunt":
+		cmd = "terragrunt"
+		args = []string{"destroy"}
+	case "opentofu":
+		fallthrough
+	default:
+		cmd = "tofu"
+		args = []string{"destroy"}
+	}
 	
 	if opts.AutoApprove {
 		args = append(args, "-auto-approve")
@@ -172,7 +244,7 @@ func (r *DefaultRunner) Destroy(ctx context.Context, opts DestroyOptions) (*Comm
 	
 	args = append(args, opts.ExtraArgs...)
 	
-	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, args...)
+	return r.runCommand(ctx, opts.WorkingDir, opts.Environment, cmd, args...)
 }
 
 // Cleanup removes the working directory
@@ -181,9 +253,9 @@ func (r *DefaultRunner) Cleanup(ctx context.Context, workingDir string) error {
 	return os.RemoveAll(workingDir)
 }
 
-// runCommand executes a tofu command and returns the result
-func (r *DefaultRunner) runCommand(ctx context.Context, workingDir string, environment map[string]string, args ...string) (*CommandResult, error) {
-	cmd := exec.CommandContext(ctx, "tofu", args...)
+// runCommand executes a command with the specified binary and returns the result
+func (r *DefaultRunner) runCommand(ctx context.Context, workingDir string, environment map[string]string, binary string, args ...string) (*CommandResult, error) {
+	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Dir = workingDir
 	
 	// Set base environment variables
@@ -194,7 +266,7 @@ func (r *DefaultRunner) runCommand(ctx context.Context, workingDir string, envir
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 	
-	r.logger.Debug("Executing command", "cmd", "tofu", "args", strings.Join(args, " "), "workingDir", workingDir, "env", environment)
+	r.logger.Debug("Executing command", "cmd", binary, "args", strings.Join(args, " "), "workingDir", workingDir, "env", environment)
 	
 	output, err := cmd.CombinedOutput()
 	exitCode := 0
